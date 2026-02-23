@@ -28,10 +28,11 @@ PyTorch 复现论文《Unsupervised Light Field Depth Estimation via Multi-view 
 
 - [x] DispNet 网络实现
 - [x] OccNet 网络实现
-- [x] 网络测试通过
-- [ ] 损失函数实现
-- [ ] 数据加载器
-- [ ] 训练脚本
+- [x] 损失函数实现
+- [x] 数据加载器（支持 HCI 数据集）
+- [x] 训练脚本
+- [x] 配置文件
+- [x] 代码编译测试通过
 - [ ] 推理和评估
 
 ## 📦 安装
