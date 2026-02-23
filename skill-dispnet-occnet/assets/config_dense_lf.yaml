@@ -1,0 +1,153 @@
+# DispNet-OccNet 训练配置 - 密集光场
+# 对应论文实验设置
+
+# 实验设置
+experiment:
+  name: "dispnet_occnet_dense"
+  output_dir: "./outputs/dense_lf"
+  seed: 42
+  resume: null
+
+# 数据集配置
+dataset:
+  name: "hci"  # hci, dlf
+  data_dir: "./data/hci"
+  split: "train"
+  view_range: [0, 7]  # 7×7 光场
+  max_disparity: 12  # 密集光场视差范围 [-12, 12]
+  
+  # 数据增强
+  augment: true
+  random_flip: true
+  random_rotate: false
+  color_jitter: false
+  
+  # 图像预处理
+  crop_size: [256, 256]
+  normalize_mean: [0.485, 0.456, 0.406]
+  normalize_std: [0.229, 0.224, 0.225]
+
+# 数据加载
+dataloader:
+  batch_size: 4
+  num_workers: 4
+  pin_memory: true
+  drop_last: true
+
+# DispNet 配置
+dispnet:
+  feature_extractor:
+    input_channels: 3
+    base_channels: 64
+    max_channels: 128
+    num_residual_blocks: 2
+    aspp_rates: [3, 6, 8]
+  
+  cost_volume:
+    method: "variance"  # variance-based feature matching
+    num_disparity_samples: 25  # [-12, 12] with interval 1
+  
+  cost_filters:
+    num_filters: 2
+    num_3d_blocks: 4
+    downsample_stride: 2
+  
+  disparity_regression:
+    method: "soft_argmin"  # soft argmin
+
+# OccNet 配置
+occnet:
+  enabled: true  # 训练时启用
+  architecture: "unet"
+  base_channels: 32
+  max_channels: 64
+  num_levels: 4
+  input_channels: 7  # I_l→c (3) + I_r→c (3) + disparity (1)
+  output_channels: 2  # O_l, O_r
+
+# 损失函数配置
+loss:
+  # 主要损失
+  lambda_wpm: 1.0  # weighted photometric loss
+  lambda_rec: 1.0  # reconstruction loss
+  
+  # 辅助损失
+  lambda_ssim: 1.0  # SSIM loss (α₁)
+  lambda_smd: 0.1   # disparity smoothness (α₂)
+  lambda_smo: 0.05  # occlusion smoothness (α₃)
+  
+  # SSIM 参数
+  ssim_window_size: 11
+  
+  # Smoothness 参数
+  smoothness_eta: 100
+
+# 优化器配置
+optimizer:
+  name: "adam"
+  lr: 0.001
+  weight_decay: 0.0001
+  betas: [0.9, 0.999]
+  eps: 1.0e-8
+
+# 学习率调度
+scheduler:
+  name: "step"
+  step_size: 50
+  gamma: 0.8
+
+# 训练配置
+training:
+  epochs: 500
+  start_epoch: 0
+  
+  # 日志
+  log_interval: 10  # 多少个 batch 打印一次
+  save_interval: 10  # 多少个 epoch 保存一次
+  
+  # 验证
+  val_interval: 10  # 多少个 epoch 验证一次
+  
+  # 梯度裁剪
+  grad_clip: 1.0
+  
+  # 混合精度训练
+  use_amp: false
+
+# 验证配置
+validation:
+  metrics:
+    - "mse"
+    - "bpr_0.07"
+    - "bpr_0.03"
+    - "bpr_0.01"
+  
+  # 保存最佳模型
+  save_best: true
+  monitor_metric: "mse"
+  monitor_mode: "min"
+
+# 推理配置（密集光场）
+inference:
+  # 输入视图组合
+  view_combinations:
+    # 水平方向
+    - [[0, 3], [0, 0], [0, -3]]  # 距离 3
+    - [[0, 2], [0, 0], [0, -2]]  # 距离 2
+    # 垂直方向
+    - [[3, 0], [0, 0], [-3, 0]]
+    - [[2, 0], [0, 0], [-2, 0]]
+  
+  # 融合策略
+  fusion:
+    method: "weighted"  # weighted, minimum
+    n_prime: 2  # 选择误差最小的 2 个
+    occlusion_handling: true
+    quantile_q: 0.95  # 遮挡检测阈值
+
+# 设备配置
+device:
+  cuda: true
+  cuda_device: "0"
+  deterministic: false
+  benchmark: true
