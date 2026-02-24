@@ -1,85 +1,46 @@
-# DispNet-OccNet 训练配置 - 密集光场
-# 对应论文实验设置
-
-# 实验设置
-experiment:
-  name: "dispnet_occnet_dense"
-  output_dir: "./outputs/dense_lf"
-  seed: 42
-
-# 数据集配置
-dataset:
-  name: "hci"
-  data_dir: "./data/hci"
-  view_range: [0, 7]  # 7×7 光场
-  max_disparity: 12
-  
-  # 数据增强
-  augment: true
-  random_flip: true
-  
-  # 图像预处理
-  crop_size: [256, 256]
-
-# 数据加载
-dataloader:
-  batch_size: 4
-  num_workers: 4
-  pin_memory: true
-  drop_last: true
-
-# DispNet 配置
-dispnet:
-  input_channels: 3
-  base_channels: 64
+model:
+  name: "DispNet"
+  in_channels: 3
   max_channels: 128
-  coarse_min: -12
-  coarse_max: 12
-  coarse_samples: 25
-  residual_min: -1
-  residual_max: 1
-  residual_samples: 21
+  num_disparities: 25
+  num_residual_disparities: 21
+  num_cost_filters: 2
 
-# OccNet 配置
 occnet:
-  input_channels: 7
-  base_channels: 32
+  name: "OccNet"
+  in_channels: 7
   max_channels: 64
 
-# 损失函数配置
-loss:
-  lambda_wpm: 1.0
-  lambda_rec: 1.0
-  lambda_ssim: 1.0
-  lambda_smd: 0.1
-  lambda_smo: 0.05
-  photo_loss_type: "l1"
-  ssim_window_size: 11
-  smoothness_eta: 100
-
-# 优化器配置
-optimizer:
-  name: "adam"
-  lr: 0.001
-  weight_decay: 0.0001
-  betas: [0.9, 0.999]
-
-# 学习率调度
-scheduler:
-  name: "step"
-  step_size: 50
-  gamma: 0.8
-
-# 训练配置
 training:
+  batch_size: 4
   epochs: 500
-  start_epoch: 0
-  log_interval: 10
-  save_interval: 10
-  val_interval: 10
-  grad_clip: 1.0
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  lr_scheduler:
+    type: "StepLR"
+    step_size: 50
+    gamma: 0.8
 
-# 设备配置
-device:
-  cuda: true
-  cuda_device: "0"
+loss:
+  alpha_ssim: 1.0
+  alpha_smd: 0.1
+  alpha_smo: 0.05
+  eta: 100.0
+
+data:
+  crop_size: 256
+  angular_size: 7
+  num_workers: 4
+  use_all_combinations: true
+
+disparity:
+  coarse_range: 24
+  coarse_interval: 1
+  residual_range: 2.0
+  residual_interval: 0.1
+  view_offsets: [2, 3]
+
+logging:
+  log_dir: "./logs"
+  checkpoint_dir: "./checkpoints"
+  save_interval: 10

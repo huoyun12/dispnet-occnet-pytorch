@@ -1,0 +1,50 @@
+model:
+  name: "DispNet"
+  in_channels: 3
+  max_channels: 128
+  num_disparities: 35
+  num_residual_disparities: 35
+  num_cost_filters: 2
+
+occnet:
+  name: "OccNet"
+  in_channels: 7
+  max_channels: 64
+
+training:
+  batch_size: 4
+  epochs: 500
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  lr_scheduler:
+    type: "StepLR"
+    step_size: 50
+    gamma: 0.8
+
+loss:
+  alpha_ssim: 1.0
+  alpha_smd: 0.1
+  alpha_smo: 0.05
+  eta: 100.0
+
+data:
+  crop_size: 256
+  angular_size: 7
+  num_workers: 4
+  use_all_combinations: false
+
+disparity:
+  coarse_range: 40
+  coarse_interval: 1.2
+  residual_range: 4.0
+  residual_interval: 0.12
+  view_offsets: [1]
+
+logging:
+  log_dir: "./logs"
+  checkpoint_dir: "./checkpoints"
+  save_interval: 10
+
+fusion:
+  method: "minimum_error"
+  quantile: 0.95
